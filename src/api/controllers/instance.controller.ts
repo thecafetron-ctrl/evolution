@@ -387,7 +387,8 @@ export class InstanceController {
       return instance.qrCode;
     } catch (error) {
       this.logger.error(error);
-      return { error: true, message: error.toString() };
+      const errorMessage = error?.message || error?.toString() || JSON.stringify(error);
+      return { error: true, message: errorMessage };
     }
   }
 
