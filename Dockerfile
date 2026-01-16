@@ -58,5 +58,5 @@ ENV DOCKER_ENV=true
 EXPOSE 8080
 
 # Railway assigns PORT dynamically, app uses SERVER_PORT
-# Also set DATABASE_URL from DATABASE_CONNECTION_URI for Prisma
-ENTRYPOINT ["/bin/bash", "-c", "export DATABASE_URL=$DATABASE_CONNECTION_URI && export SERVER_PORT=${PORT:-8080} && npm run db:deploy && npm run start:prod"]
+# Override .env DATABASE_CONNECTION_URI with runtime value
+ENTRYPOINT ["/bin/bash", "-c", "echo \"DATABASE_CONNECTION_URI=$DATABASE_CONNECTION_URI\" > .env && echo \"DATABASE_PROVIDER=$DATABASE_PROVIDER\" >> .env && echo \"SERVER_TYPE=http\" >> .env && echo \"SERVER_PORT=${PORT:-8080}\" >> .env && echo \"AUTHENTICATION_API_KEY=$AUTHENTICATION_API_KEY\" >> .env && echo \"CACHE_REDIS_ENABLED=${CACHE_REDIS_ENABLED:-false}\" >> .env && echo \"CACHE_LOCAL_ENABLED=${CACHE_LOCAL_ENABLED:-true}\" >> .env && export DATABASE_URL=$DATABASE_CONNECTION_URI && npm run db:deploy && npm run start:prod"]
