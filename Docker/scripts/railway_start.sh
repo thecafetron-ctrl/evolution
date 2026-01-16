@@ -1,5 +1,5 @@
 #!/bin/bash
-# Railway startup script - v4
+# Railway startup script - v5
 
 echo ">>>>> RAILWAY STARTUP SCRIPT RUNNING <<<<<"
 echo ">>>>> PORT=$PORT <<<<<"
@@ -11,17 +11,22 @@ export DATABASE_URL="$DATABASE_CONNECTION_URI"
 
 echo ">>>>> SERVER_PORT=$SERVER_PORT <<<<<"
 
-# Create .env file
+# Create .env file with all required variables
 cat > .env << EOF
 DATABASE_PROVIDER=${DATABASE_PROVIDER:-postgresql}
 DATABASE_CONNECTION_URI=$DATABASE_CONNECTION_URI
 SERVER_TYPE=http
 SERVER_PORT=$SERVER_PORT
-AUTHENTICATION_API_KEY=${AUTHENTICATION_API_KEY:-test}
+AUTHENTICATION_API_KEY=${AUTHENTICATION_API_KEY:-evo_api_key_secure_2026}
 CACHE_REDIS_ENABLED=false
 CACHE_LOCAL_ENABLED=true
 CORS_ORIGIN=*
+CORS_METHODS=POST,GET,PUT,DELETE
+CORS_CREDENTIALS=true
 LANGUAGE=en
+LOG_LEVEL=ERROR,WARN,INFO,LOG
+LOG_COLOR=false
+TELEMETRY_ENABLED=false
 EOF
 
 echo ">>>>> .env created <<<<<"
