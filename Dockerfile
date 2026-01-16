@@ -57,5 +57,6 @@ ENV DOCKER_ENV=true
 
 EXPOSE 8080
 
-# Simplified startup that handles DATABASE_URL from DATABASE_CONNECTION_URI
-ENTRYPOINT ["/bin/bash", "-c", "export DATABASE_URL=$DATABASE_CONNECTION_URI && npm run db:deploy && npm run start:prod"]
+# Railway assigns PORT dynamically, app uses SERVER_PORT
+# Also set DATABASE_URL from DATABASE_CONNECTION_URI for Prisma
+ENTRYPOINT ["/bin/bash", "-c", "export DATABASE_URL=$DATABASE_CONNECTION_URI && export SERVER_PORT=${PORT:-8080} && npm run db:deploy && npm run start:prod"]
