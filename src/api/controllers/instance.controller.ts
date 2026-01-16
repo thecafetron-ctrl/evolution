@@ -34,6 +34,62 @@ export class InstanceController {
 
   private readonly logger = new Logger('InstanceController');
 
+  // Helper to get or load instance from database
+  private async getOrLoadInstance(instanceName: string) {
+    // Check if already in memory
+    if (this.waMonitor.waInstances[instanceName]) {
+      return this.waMonitor.waInstances[instanceName];
+    }
+
+    // Try to load from database
+    const dbInstance = await this.prismaRepository.instance.findFirst({
+      where: { name: instanceName },
+    });
+
+    if (!dbInstance) {
+      return null;
+    }
+
+    // Initialize the instance
+    const instanceData: InstanceDto = {
+      instanceName: dbInstance.name,
+      instanceId: dbInstance.id,
+      integration: dbInstance.integration as any,
+      token: dbInstance.token,
+      number: dbInstance.number,
+      businessId: dbInstance.businessId,
+    };
+
+    const instance = channelController.init(instanceData, {
+      configService: this.configService,
+      eventEmitter: this.eventEmitter,
+      prismaRepository: this.prismaRepository,
+      cache: this.cache,
+      chatwootCache: this.chatwootCache,
+      baileysCache: this.baileysCache,
+      providerFiles: this.providerFiles,
+    });
+
+    if (!instance) {
+      return null;
+    }
+
+    instance.setInstance({
+      instanceId: dbInstance.id,
+      instanceName: dbInstance.name,
+      integration: dbInstance.integration as any,
+      token: dbInstance.token,
+      number: dbInstance.number,
+      businessId: dbInstance.businessId,
+      ownerJid: dbInstance.ownerJid,
+    });
+
+    this.waMonitor.waInstances[instanceName] = instance;
+    this.logger.info(`Instance "${instanceName}" loaded from database`);
+
+    return instance;
+  }
+
   public async createInstance(instanceData: InstanceDto) {
     try {
       const instance = channelController.init(instanceData, {
@@ -308,12 +364,14 @@ export class InstanceController {
 
   public async connectToWhatsapp({ instanceName, number = null }: InstanceDto) {
     try {
-      const instance = this.waMonitor.waInstances[instanceName];
-      const state = instance?.connectionStatus?.state;
+      // Get instance from memory or load from database
+      const instance = await this.getOrLoadInstance(instanceName);
 
-      if (!state) {
+      if (!instance) {
         throw new BadRequestException('The "' + instanceName + '" instance does not exist');
       }
+
+      const state = instance?.connectionStatus?.state;
 
       if (state == 'open') {
         return await this.connectionState({ instanceName });
@@ -323,20 +381,10 @@ export class InstanceController {
         return instance.qrCode;
       }
 
-      if (state == 'close') {
-        await instance.connectToWhatsapp(number);
-
-        await delay(2000);
-        return instance.qrCode;
-      }
-
-      return {
-        instance: {
-          instanceName: instanceName,
-          status: state,
-        },
-        qrcode: instance?.qrCode,
-      };
+      // Connect if closed or no state
+      await instance.connectToWhatsapp(number);
+      await delay(2000);
+      return instance.qrCode;
     } catch (error) {
       this.logger.error(error);
       return { error: true, message: error.toString() };
@@ -345,12 +393,13 @@ export class InstanceController {
 
   public async restartInstance({ instanceName }: InstanceDto) {
     try {
-      const instance = this.waMonitor.waInstances[instanceName];
-      const state = instance?.connectionStatus?.state;
+      const instance = await this.getOrLoadInstance(instanceName);
 
-      if (!state) {
+      if (!instance) {
         throw new BadRequestException('The "' + instanceName + '" instance does not exist');
       }
+
+      const state = instance?.connectionStatus?.state;
 
       if (state === 'close') {
         throw new BadRequestException('The "' + instanceName + '" instance is not connected');

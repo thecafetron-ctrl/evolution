@@ -31,22 +31,23 @@ function isEmoji(str: string) {
 export class SendMessageController {
   constructor(private readonly waMonitor: WAMonitoringService) {}
 
-  private getInstance(instanceName: string) {
-    const instance = this.waMonitor.waInstances[instanceName];
+  private async getInstance(instanceName: string) {
+    // Try to get from memory or load from database
+    const instance = await this.waMonitor.getOrLoadInstance(instanceName);
     if (!instance) {
-      throw new NotFoundException(
-        `Instance "${instanceName}" not found or not connected. Please connect the instance first.`,
-      );
+      throw new NotFoundException(`Instance "${instanceName}" not found. Please create the instance first.`);
     }
     return instance;
   }
 
   public async sendTemplate({ instanceName }: InstanceDto, data: SendTemplateDto) {
-    return await this.getInstance(instanceName).templateMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.templateMessage(data);
   }
 
   public async sendText({ instanceName }: InstanceDto, data: SendTextDto) {
-    return await this.getInstance(instanceName).textMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.textMessage(data);
   }
 
   public async sendMedia({ instanceName }: InstanceDto, data: SendMediaDto, file?: any) {
@@ -55,28 +56,32 @@ export class SendMessageController {
     }
 
     if (file || isURL(data?.media) || isBase64(data?.media)) {
-      return await this.getInstance(instanceName).mediaMessage(data, file);
+      const instance = await this.getInstance(instanceName);
+      return await instance.mediaMessage(data, file);
     }
     throw new BadRequestException('Owned media must be a url or base64');
   }
 
   public async sendPtv({ instanceName }: InstanceDto, data: SendPtvDto, file?: any) {
     if (file || isURL(data?.video) || isBase64(data?.video)) {
-      return await this.getInstance(instanceName).ptvMessage(data, file);
+      const instance = await this.getInstance(instanceName);
+      return await instance.ptvMessage(data, file);
     }
     throw new BadRequestException('Owned media must be a url or base64');
   }
 
   public async sendSticker({ instanceName }: InstanceDto, data: SendStickerDto, file?: any) {
     if (file || isURL(data.sticker) || isBase64(data.sticker)) {
-      return await this.getInstance(instanceName).mediaSticker(data, file);
+      const instance = await this.getInstance(instanceName);
+      return await instance.mediaSticker(data, file);
     }
     throw new BadRequestException('Owned media must be a url or base64');
   }
 
   public async sendWhatsAppAudio({ instanceName }: InstanceDto, data: SendAudioDto, file?: any) {
     if (file?.buffer || isURL(data.audio) || isBase64(data.audio)) {
-      return await this.getInstance(instanceName).audioWhatsapp(data, file);
+      const instance = await this.getInstance(instanceName);
+      return await instance.audioWhatsapp(data, file);
     } else {
       console.error('El archivo no tiene buffer o el audio no es una URL o Base64 válida');
       throw new BadRequestException('Owned media must be a url, base64, or valid file with buffer');
@@ -84,33 +89,40 @@ export class SendMessageController {
   }
 
   public async sendButtons({ instanceName }: InstanceDto, data: SendButtonsDto) {
-    return await this.getInstance(instanceName).buttonMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.buttonMessage(data);
   }
 
   public async sendLocation({ instanceName }: InstanceDto, data: SendLocationDto) {
-    return await this.getInstance(instanceName).locationMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.locationMessage(data);
   }
 
   public async sendList({ instanceName }: InstanceDto, data: SendListDto) {
-    return await this.getInstance(instanceName).listMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.listMessage(data);
   }
 
   public async sendContact({ instanceName }: InstanceDto, data: SendContactDto) {
-    return await this.getInstance(instanceName).contactMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.contactMessage(data);
   }
 
   public async sendReaction({ instanceName }: InstanceDto, data: SendReactionDto) {
     if (!isEmoji(data.reaction)) {
       throw new BadRequestException('Reaction must be a single emoji or empty string');
     }
-    return await this.getInstance(instanceName).reactionMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.reactionMessage(data);
   }
 
   public async sendPoll({ instanceName }: InstanceDto, data: SendPollDto) {
-    return await this.getInstance(instanceName).pollMessage(data);
+    const instance = await this.getInstance(instanceName);
+    return await instance.pollMessage(data);
   }
 
   public async sendStatus({ instanceName }: InstanceDto, data: SendStatusDto, file?: any) {
-    return await this.getInstance(instanceName).statusMessage(data, file);
+    const instance = await this.getInstance(instanceName);
+    return await instance.statusMessage(data, file);
   }
 }

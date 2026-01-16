@@ -42,6 +42,62 @@ export class WAMonitoringService {
 
   private readonly providerSession: ProviderSession;
 
+  // Public helper to get instance from memory or load from database
+  public async getOrLoadInstance(instanceName: string) {
+    // Check if already in memory
+    if (this.waInstances[instanceName]) {
+      return this.waInstances[instanceName];
+    }
+
+    // Try to load from database
+    const dbInstance = await this.prismaRepository.instance.findFirst({
+      where: { name: instanceName },
+    });
+
+    if (!dbInstance) {
+      return null;
+    }
+
+    // Initialize the instance
+    const instanceData: InstanceDto = {
+      instanceName: dbInstance.name,
+      instanceId: dbInstance.id,
+      integration: dbInstance.integration as any,
+      token: dbInstance.token,
+      number: dbInstance.number,
+      businessId: dbInstance.businessId,
+    };
+
+    const instance = channelController.init(instanceData, {
+      configService: this.configService,
+      eventEmitter: this.eventEmitter,
+      prismaRepository: this.prismaRepository,
+      cache: this.cache,
+      chatwootCache: this.chatwootCache,
+      baileysCache: this.baileysCache,
+      providerFiles: this.providerFiles,
+    });
+
+    if (!instance) {
+      return null;
+    }
+
+    instance.setInstance({
+      instanceId: dbInstance.id,
+      instanceName: dbInstance.name,
+      integration: dbInstance.integration as any,
+      token: dbInstance.token,
+      number: dbInstance.number,
+      businessId: dbInstance.businessId,
+      ownerJid: dbInstance.ownerJid,
+    });
+
+    this.waInstances[instanceName] = instance;
+    this.logger.info(`Instance "${instanceName}" loaded from database on-demand`);
+
+    return instance;
+  }
+
   public delInstanceTime(instance: string) {
     const time = this.configService.get<DelInstance>('DEL_INSTANCE');
     if (typeof time === 'number' && time > 0) {
