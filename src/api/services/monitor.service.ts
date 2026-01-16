@@ -130,30 +130,40 @@ export class WAMonitoringService {
   }
 
   public async instanceInfoById(instanceId?: string, number?: string) {
-    let instanceName: string;
+    const clientName = this.configService.get<Database>('DATABASE').CONNECTION.CLIENT_NAME;
+
+    const where: any = { clientName };
     if (instanceId) {
-      instanceName = await this.prismaRepository.instance.findFirst({ where: { id: instanceId } }).then((r) => r?.name);
-      if (!instanceName) {
-        throw new NotFoundException(`Instance "${instanceId}" not found`);
-      }
+      where.id = instanceId;
     } else if (number) {
-      instanceName = await this.prismaRepository.instance.findFirst({ where: { number } }).then((r) => r?.name);
-      if (!instanceName) {
-        throw new NotFoundException(`Instance "${number}" not found`);
-      }
+      where.number = number;
     }
 
-    if (!instanceName) {
-      throw new NotFoundException(`Instance "${instanceId}" not found`);
+    const instances = await this.prismaRepository.instance.findMany({
+      where,
+      include: {
+        Chatwoot: true,
+        Proxy: true,
+        Rabbitmq: true,
+        Nats: true,
+        Sqs: true,
+        Websocket: true,
+        Setting: true,
+        _count: {
+          select: {
+            Message: true,
+            Contact: true,
+            Chat: true,
+          },
+        },
+      },
+    });
+
+    if (instances.length === 0) {
+      throw new NotFoundException(`Instance "${instanceId || number}" not found`);
     }
 
-    if (instanceName && !this.waInstances[instanceName]) {
-      throw new NotFoundException(`Instance "${instanceName}" not found`);
-    }
-
-    const instanceNames = instanceName ? [instanceName] : null;
-
-    return this.instanceInfo(instanceNames);
+    return instances;
   }
 
   public async cleaningUp(instanceName: string) {
