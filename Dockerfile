@@ -1,5 +1,6 @@
 FROM node:24-alpine AS builder
 
+# Force rebuild: 2026-01-16-v4
 RUN apk update && \
     apk add --no-cache git ffmpeg wget curl bash openssl
 
