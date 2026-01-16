@@ -57,4 +57,5 @@ ENV DOCKER_ENV=true
 
 EXPOSE 8080
 
-ENTRYPOINT ["/bin/bash", "-c", ". ./Docker/scripts/deploy_database.sh && npm run start:prod" ]
+# Simplified startup that handles DATABASE_URL from DATABASE_CONNECTION_URI
+ENTRYPOINT ["/bin/bash", "-c", "export DATABASE_URL=$DATABASE_CONNECTION_URI && npm run db:deploy && npm run start:prod"]
