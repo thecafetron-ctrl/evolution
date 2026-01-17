@@ -576,6 +576,12 @@ export class BaileysStartupService extends ChannelStartupService {
   private async createClient(number?: string): Promise<WASocket> {
     this.instance.authState = await this.defineAuthState();
 
+    if (!this.instance.authState || !this.instance.authState.state) {
+      throw new BadRequestException(
+        'Failed to initialize authentication state. Please check database configuration (DATABASE_SAVE_DATA_INSTANCE should be true).',
+      );
+    }
+
     const session = this.configService.get<ConfigSessionPhone>('CONFIG_SESSION_PHONE');
 
     let browserOptions = {};
