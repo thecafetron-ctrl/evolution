@@ -373,18 +373,30 @@ export class InstanceController {
 
       const state = instance?.connectionStatus?.state;
 
-      if (state == 'open') {
+      if (state === 'open') {
         return await this.connectionState({ instanceName });
       }
 
-      if (state == 'connecting') {
+      if (state === 'connecting') {
         return instance.qrCode;
       }
 
-      // Connect if closed or no state
+      // Connect if closed, no state, or just loaded from DB
+      this.logger.info(`Connecting instance "${instanceName}" (current state: ${state || 'none'})`);
       await instance.connectToWhatsapp(number);
-      await delay(2000);
-      return instance.qrCode;
+      await delay(3000);
+
+      // Return QR code or connection status
+      if (instance.qrCode) {
+        return instance.qrCode;
+      }
+
+      return {
+        instance: {
+          instanceName: instanceName,
+          status: instance?.connectionStatus?.state || 'connecting',
+        },
+      };
     } catch (error) {
       this.logger.error(error);
       const errorMessage = error?.message || error?.toString() || JSON.stringify(error);
