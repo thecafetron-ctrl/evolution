@@ -58,7 +58,7 @@ ENV DOCKER_ENV=true
 
 EXPOSE 8080
 
-# Cache bust: 2026-01-16-v3
+# Cache bust: 2026-01-17-v1
 # Make Railway startup script executable
 RUN chmod +x ./Docker/scripts/railway_start.sh
 
