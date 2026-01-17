@@ -695,9 +695,14 @@ export class BaileysStartupService extends ChannelStartupService {
 
     this.endSession = false;
 
+    // Ensure stateConnection is initialized
+    if (!this.stateConnection) {
+      this.stateConnection = { state: 'close' };
+    }
+
     this.client = makeWASocket(socketConfig);
 
-    if (this.localSettings.wavoipToken && this.localSettings.wavoipToken.length > 0) {
+    if (this.localSettings.wavoipToken && this.localSettings.wavoipToken.length > 0 && this.connectionStatus?.state) {
       useVoiceCallsBaileys(this.localSettings.wavoipToken, this.client, this.connectionStatus.state as any, true);
     }
 
